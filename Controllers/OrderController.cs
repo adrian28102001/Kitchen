@@ -6,32 +6,48 @@ using Newtonsoft.Json;
 namespace Kitchen.Controllers;
 
 [ApiController]
-[Route("/order")]
+[Route("/kitchen")]
 public class OrderController : Controller
 {
+    [HttpGet]
+    public ContentResult GetOrders()
+    {
+        return Content("Hello");
+    }
+    
     // GET
     [HttpPost]
     public async Task<ContentResult> PostOrder([FromBody] Order? order)
     {
-        //process order
-        //send finshed order object back to dining hall
-        Thread.Sleep(10000);
-        if (order != null)
+        try
         {
-            order.Status = Status.ReadyToBeServed;
-            Console.WriteLine($"Order with id {order.Id} was brought by waiter with id {order.WaiterId}");
+            //process order
+            //send finshed order object back to dining hall`
+            Thread.Sleep(10000);
+            if (order != null)
+            {
+                order.Status = Status.ReadyToBeServed;
+                Console.WriteLine(
+                    $"Order with id {order.Id} from table {order.TableId} was brought by waiter with id {order.WaiterId}");
+            }
+
+
+            var json = JsonConvert.SerializeObject(order);
+            var data = new StringContent(json, Encoding.UTF8, "application/json");
+
+            const string url = Settings.DiningHallUrl;
+            using var client = new HttpClient();
+
+            var response = await client.PostAsync(url, data);
+            var result = await response.Content.ReadAsStringAsync();
         }
-        var json = JsonConvert.SerializeObject(order);
-        var data = new StringContent(json, Encoding.UTF8, "application/json");
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to send order {order.Id}");
+        }
 
-        const string url = Settings.DiningHallUrl;
-        using var client = new HttpClient();
-
-        var response =  await client.PostAsync(url, data);
         // var response =  await client.PostAsync(url, data);
-        
         // _logger.LogInformation("Order "+ order.Id+" sent to kitchen");
-        var result = await response.Content.ReadAsStringAsync();
         return Content("Hi");
     }
 }
