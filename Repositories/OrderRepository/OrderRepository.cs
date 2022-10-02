@@ -1,9 +1,6 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Kitchen.Models;
-using Kitchen.Repositories.GenericRepository;
 
 namespace Kitchen.Repositories.OrderRepository;
 
@@ -29,9 +26,9 @@ public class OrderRepository : IOrderRepository
         return Task.FromResult(Orders.OrderBy(o => o.CreatedOnUtc).ToList());
     }
 
-    public Task<Order?> GetOrderToPrepare()
+    public Task<IOrderedEnumerable<Order>> GetOrderToPrepare()
     {
-        return Task.FromResult(Orders.OrderBy(o => o.CreatedOnUtc).ThenBy(o => o.Priority).FirstOrDefault());
+        return Task.FromResult(Orders.OrderBy(o => o.CreatedOnUtc).ThenBy(o => o.Priority));
     }
 
     public Task<ObservableCollection<Order>> GetAll()

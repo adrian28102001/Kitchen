@@ -78,6 +78,12 @@ public class CookRepository : ICookRepository
 
     public Task<Cook> GetCookerByRank(int rank)
     {
-        return Task.FromResult(_cooks.FirstOrDefault(cook => cook.Rank.Equals(rank)))!;
+        return Task.FromResult(_cooks.LastOrDefault(cook => cook.Rank.Equals(rank)))!;
+    }
+
+    public Task<Cook> GetSpecialCooker(int rank, int proficiency)
+    {
+        return Task.FromResult(_cooks
+            .First(cook => cook.Rank.Equals(rank) && (cook.Proficiency.Equals(proficiency))));
     }
 }

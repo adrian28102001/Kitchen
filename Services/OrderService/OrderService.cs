@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Drawing;
 using System.Text;
 using Kitchen.Helpers;
 using Kitchen.Models;
@@ -35,38 +36,75 @@ public class OrderService : IOrderService
         return _orderRepository.GetAll();
     }
 
-    private Task<List<Order>> GetOldestOrders()
-    {
-        return _orderRepository.GetOldestOrders();
-    }
-
-    private Task<Order?> GetOrderToPrepare()
-    {
-        return _orderRepository.GetOrderToPrepare();
-    }
-
     public async void PrepareOrder(object? sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
     {
-        var order = await GetOrderToPrepare();
+        var ordersList = await _orderRepository.GetOrderToPrepare();
+        var orders = new List<Order>(ordersList);
+        foreach (var order in orders.ToList())
+        {
+            ConsoleHelper.Print("I started a new order");
+            var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
 
-        if (order == null) return;
+            var sortedByComplexity = await _foodService.SortFoodByComplexity(foodList);
+            Console.WriteLine($"Order with id: {order.Id} has a list of {foodList.Count} foods");
 
-        var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
-        var sortedByComplexity = await _foodService.SortFoodByComplexity(foodList);
-        Console.WriteLine($"Order with id: {order.Id} has a list of {foodList.Count} foods");
-        await _cookService.AddFoodToCookerList(sortedByComplexity.ToList(), new List<Task>());
+            //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
+            var isSimpleOrder = await IsSimpleOrder(order);
+
+            if (!isSimpleOrder)
+            {
+                ConsoleHelper.Print("I am a normal order");
+                await _cookService.AddFoodToCookerList(sortedByComplexity.ToList(), new List<Task>());
+            }
+            else
+            {
+                ConsoleHelper.Print("I am a special order");
+                await _cookService.CallSpecialCooker(sortedByComplexity.ToList(), new List<Task>());
+            }
+
+            SendOrder(order);
+            orders.Remove(order);
+            ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen", ConsoleColor.Magenta);
+        }
     }
 
+    private async Task<bool> IsSimpleOrder(Order order)
+    {
+        var result = true;
+        if (order.FoodList.Count > 6)
+        {
+            return false;
+        }
+
+        var foods = await _foodService.GetFoodFromOrder(order.FoodList);
+        foreach (var food in foods)
+        {
+            if (food.Complexity > 2)
+            {
+                result = false;
+            }
+        }
+
+        return result;
+    }
 
     public async Task SendOrder(Order order)
     {
-        var json = JsonConvert.SerializeObject(order);
-        var data = new StringContent(json, Encoding.UTF8, "application/json");
+        try
+        {
+            Console.WriteLine("I will try to send the order, I know it will fail by I try :)");
+            var json = JsonConvert.SerializeObject(order);
+            var data = new StringContent(json, Encoding.UTF8, "application/json");
 
-        const string url = Settings.DiningHallUrl;
-        using var client = new HttpClient();
+            const string url = Settings.DiningHallUrl;
+            using var client = new HttpClient();
 
-        var response = await client.PostAsync(url, data);
-        var result = await response.Content.ReadAsStringAsync();
+            var response = await client.PostAsync(url, data);
+            var result = await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception e)
+        {
+            //ignore
+        }
     }
 }

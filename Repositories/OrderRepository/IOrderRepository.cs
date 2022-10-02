@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Kitchen.Models;
 
 namespace Kitchen.Repositories.OrderRepository;
@@ -11,5 +10,5 @@ public interface IOrderRepository
     Task<Order?> GetById(int id);
     Task InsertOrder(Order order);
     Task<List<Order>> GetOldestOrders();
-    Task<Order?> GetOrderToPrepare();
+    Task<IOrderedEnumerable<Order>> GetOrderToPrepare();
 }

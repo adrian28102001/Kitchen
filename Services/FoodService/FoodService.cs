@@ -36,4 +36,9 @@ public class FoodService : IFoodService
     {
         return Task.FromResult(foods.OrderByDescending(food => food.Complexity));
     }
+
+    public Task<Food?> GetFoodThatPreparesQuickest(IEnumerable<Food> foods)
+    {
+        return Task.FromResult(foods.MinBy(food => food.PreparationTime));
+    }
 }

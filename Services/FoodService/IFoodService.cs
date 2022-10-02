@@ -9,4 +9,5 @@ public interface IFoodService
     Task GenerateMenu();
     Task<IList<Food>> GetFoodFromOrder(IEnumerable<int> foodIds);
     Task<IOrderedEnumerable<Food>> SortFoodByComplexity(IEnumerable<Food> foods);
+    Task<Food?> GetFoodThatPreparesQuickest(IEnumerable<Food> foods);
 }

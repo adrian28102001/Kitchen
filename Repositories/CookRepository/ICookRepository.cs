@@ -10,4 +10,5 @@ public interface ICookRepository
     Task<Cook?> GetById(int id);
     Task<Cook?> GetFreeCook();
     Task<Cook> GetCookerByRank(int rank);
+    Task<Cook> GetSpecialCooker(int rank, int proficiency);
 }
