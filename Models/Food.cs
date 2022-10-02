@@ -1,6 +1,6 @@
 ﻿namespace Kitchen.Models;
 
-public class Food : Entity
+public class Food : BaseEntity
 {
     public string Name { get; set; }
     public int PreparationTime { get; set; }

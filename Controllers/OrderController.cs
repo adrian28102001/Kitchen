@@ -1,7 +1,7 @@
-﻿using System.Text;
+﻿using System.Collections.Specialized;
 using Kitchen.Models;
+using Kitchen.Services.OrderService;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace Kitchen.Controllers;
 
@@ -9,45 +9,45 @@ namespace Kitchen.Controllers;
 [Route("/kitchen")]
 public class OrderController : Controller
 {
-    [HttpGet]
-    public ContentResult GetOrders()
-    {
-        return Content("Hello");
-    }
+    private readonly IOrderService _orderService;
     
-    // GET
-    [HttpPost]
-    public async Task<ContentResult> PostOrder([FromBody] Order? order)
+    public OrderController(IOrderService orderService)
     {
+        _orderService = orderService;
+    }
+
+    [HttpPost]
+    public async Task GetOrderFromKitchen([FromBody] Order? order)
+    {
+        if (order == null) return;
+    
         try
         {
-            //process order
-            //send finshed order object back to dining hall`
-            Thread.Sleep(10000);
-            if (order != null)
-            {
-                order.Status = Status.ReadyToBeServed;
-                Console.WriteLine(
-                    $"Order with id {order.Id} from table {order.TableId} was brought by waiter with id {order.WaiterId}");
-            }
-
-
-            var json = JsonConvert.SerializeObject(order);
-            var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-            const string url = Settings.DiningHallUrl;
-            using var client = new HttpClient();
-
-            var response = await client.PostAsync(url, data);
-            var result = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"An order with {order.Id} came in the kitchen");
+            await _orderService.InsertOrder(order);
+            _orderService.PrepareOrder(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add));
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Failed to send order {order.Id}");
+            Console.WriteLine($"Failed to get order {order.Id}", e);
         }
-
-        // var response =  await client.PostAsync(url, data);
-        // _logger.LogInformation("Order "+ order.Id+" sent to kitchen");
-        return Content("Hi");
     }
+    // [HttpPost]
+    // public async Task<ContentResult> PostOrder([FromBody] Order? order)
+    // {
+    //     if (order == null) return Content("Order is null");
+    //     
+    //     try
+    //     {
+    //         await _orderService.SendOrder(order);
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Console.WriteLine($"Failed to send order {order.Id}");
+    //     }
+    //     
+    //     // var response =  await client.PostAsync(url, data);
+    //     // _logger.LogInformation("Order "+ order.Id+" sent to kitchen");
+    //     return Content("Hi");
+    // }
 }

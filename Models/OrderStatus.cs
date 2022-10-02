@@ -1,6 +1,6 @@
 ﻿namespace Kitchen.Models;
 
-public enum Status
+public enum OrderStatus
 {
     IsAvailable = 1,
     ReadyToOrder = 2,

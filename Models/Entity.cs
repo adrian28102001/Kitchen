@@ -1,6 +1,7 @@
 ﻿namespace Kitchen.Models;
 
-public class Entity
+public class Entity : BaseEntity
 {
-    public int Id { get; set; }
+    public DateTime CreatedOnUtc { get; set; }
+    public DateTime UpdatedOnUtc { get; set; }
 }
