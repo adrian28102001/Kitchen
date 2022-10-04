@@ -54,17 +54,17 @@ public class OrderService : IOrderService
             if (!isSimpleOrder)
             {
                 ConsoleHelper.Print("I am a normal order");
-                await _cookService.AddFoodToCookerList(sortedByComplexity.ToList(), new List<Task>());
+                await _cookService.AddFoodToCookerList(order.Id, sortedByComplexity.ToList(), new List<Task>());
             }
             else
             {
                 ConsoleHelper.Print("I am a special order");
-                await _cookService.CallSpecialCooker(sortedByComplexity.ToList(), new List<Task>());
+                await _cookService.CallSpecialCooker(order.Id, sortedByComplexity.ToList(), new List<Task>());
             }
 
-            SendOrder(order);
-            orders.Remove(order);
+            await SendOrder(order);
             ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen", ConsoleColor.Magenta);
+            orders.Remove(order);
         }
     }
 
@@ -92,7 +92,7 @@ public class OrderService : IOrderService
     {
         try
         {
-            Console.WriteLine("I will try to send the order, I know it will fail by I try :)");
+            Console.WriteLine($"I have sent the order with id: {order.Id} to kitchen");
             var json = JsonConvert.SerializeObject(order);
             var data = new StringContent(json, Encoding.UTF8, "application/json");
 

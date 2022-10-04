@@ -3,6 +3,7 @@ using Kitchen.Helpers;
 using Kitchen.Models;
 using Kitchen.Repositories.CookRepository;
 using Kitchen.Services.FoodService;
+using Kitchen.Services.OrderHistoryService;
 
 namespace Kitchen.Services.CookService;
 
@@ -10,11 +11,14 @@ public class CookService : ICookService
 {
     private readonly ICookRepository _cookRepository;
     private readonly IFoodService _foodService;
+    private readonly IOrderHistoryService _orderHistoryService;
 
-    public CookService(ICookRepository cookRepository, IFoodService foodService)
+    public CookService(ICookRepository cookRepository, IFoodService foodService,
+        IOrderHistoryService orderHistoryService)
     {
         _cookRepository = cookRepository;
         _foodService = foodService;
+        _orderHistoryService = orderHistoryService;
     }
 
     public Task GenerateCooks()
@@ -42,7 +46,7 @@ public class CookService : ICookService
         return _cookRepository.GetCookerByRank(rank);
     }
 
-    public async Task AddFoodToCookerList(IEnumerable<Food> foodList, List<Task> tasks)
+    public async Task AddFoodToCookerList(int orderId, IEnumerable<Food> foodList, List<Task> tasks)
     {
         var foods = new List<Food>(foodList);
         foreach (var food in foods.ToList())
@@ -51,18 +55,18 @@ public class CookService : ICookService
             {
                 case 3:
                 {
-                    await PrepareFoodForCooker(food, tasks, foods);
+                    await PrepareFoodForCooker(orderId, food, tasks, foods);
                     break;
                 }
 
                 case 2:
                 {
-                    await PrepareFoodForCooker(food, tasks, foods);
+                    await PrepareFoodForCooker(orderId, food, tasks, foods);
                     break;
                 }
                 case 1:
                 {
-                    await PrepareFoodForCooker(food, tasks, foods);
+                    await PrepareFoodForCooker(orderId, food, tasks, foods);
                     break;
                 }
             }
@@ -71,7 +75,7 @@ public class CookService : ICookService
         if (foods.Any())
         {
             await SleepFunctionCall(foods);
-            await AddFoodToCookerList(foods, tasks);
+            await AddFoodToCookerList(orderId, foods, tasks);
         }
 
         await Task.WhenAll(tasks);
@@ -79,7 +83,7 @@ public class CookService : ICookService
     }
 
     //This cooker is done special for simple orders who can be fast done
-    public async Task CallSpecialCooker(IEnumerable<Food> foodList, List<Task> tasks)
+    public async Task CallSpecialCooker(int orderId, IEnumerable<Food> foodList, List<Task> tasks)
     {
         var foods = new List<Food>(foodList);
         var cooker = await _cookRepository.GetSpecialCooker(2, 2);
@@ -87,7 +91,7 @@ public class CookService : ICookService
         {
             if (cooker.CookingList.Count < cooker.Proficiency)
             {
-                await AdjustCookerCookingList(cooker, food, foods, tasks);
+                await AdjustCookerCookingList(orderId, cooker, food, foods, tasks);
             }
             else
             {
@@ -97,7 +101,7 @@ public class CookService : ICookService
 
         if (foods.Any())
         {
-            ConsoleHelper.Print("I am int the special method", ConsoleColor.Red);
+            ConsoleHelper.Print("I am the special method", ConsoleColor.Red);
             await SleepFunctionCall(foods);
         }
 
@@ -114,44 +118,45 @@ public class CookService : ICookService
         }
     }
 
-    private async Task PrepareFoodForCooker(Food food, ICollection<Task> tasks, ICollection<Food> foods)
+    private async Task PrepareFoodForCooker(int orderId, Food food, ICollection<Task> tasks, ICollection<Food> foods)
     {
         var cooker = await _cookRepository.GetCookerByRank(food.Complexity);
 
         if (cooker.CookingList.Count < cooker.Proficiency)
         {
-            await AdjustCookerCookingList(cooker, food, foods, tasks);
+            await AdjustCookerCookingList(orderId, cooker, food, foods, tasks);
         }
         else
         {
             //There is no one above the main chef, so there is no one who could help him
             if (food.Complexity != 3)
             {
-                await CallForHelp(food, tasks, foods);
+                await CallForHelp(orderId, food, tasks, foods);
             }
         }
     }
 
-    private async Task CallForHelp(Food food, ICollection<Task> tasks, ICollection<Food> foods)
+    private async Task CallForHelp(int orderId, Food food, ICollection<Task> tasks, ICollection<Food> foods)
     {
         var helperCooker = await _cookRepository.GetCookerByRank(food.Complexity + 1);
-        if (helperCooker.CookingList.Count <= helperCooker.Proficiency)
+        if (helperCooker.CookingList.Count < helperCooker.Proficiency)
         {
             ConsoleHelper.Print($"A helping {helperCooker.Name} come to help", ConsoleColor.Yellow);
-            await AdjustCookerCookingList(helperCooker, food, foods, tasks);
+            await AdjustCookerCookingList(orderId, helperCooker, food, foods, tasks);
         }
     }
 
-    private Task AdjustCookerCookingList(Cook cooker, Food food, ICollection<Food> foods, ICollection<Task> tasks)
+    private Task AdjustCookerCookingList(int orderId, Cook cooker, Food food, ICollection<Food> foods,
+        ICollection<Task> tasks)
     {
         cooker.CookingList.Add(food);
         ConsoleHelper.Print($"I am {cooker.Name} and I will cook {food.Name}", ConsoleColor.DarkBlue);
-        tasks.Add(CookFood(cooker.Id));
+        tasks.Add(CookFood(orderId, cooker.Id));
         foods.Remove(food);
         return Task.CompletedTask;
     }
 
-    private async Task CookFood(int cookerId)
+    private async Task CookFood(int orderId, int cookerId)
     {
         var cooker = await _cookRepository.GetById(cookerId);
         var food = cooker?.CookingList.FirstOrDefault();
@@ -159,6 +164,14 @@ public class CookService : ICookService
         if (food != null)
         {
             await SleepGenerator.Delay(food.PreparationTime);
+            _orderHistoryService.Insert(new OrderHistory
+            {
+                Id = IdGenerator.GenerateId(),
+                CookerId = cookerId,
+                FoodId = food.Id,
+                OrderId = orderId
+            });
+
             ConsoleHelper.Print($"I am {cooker?.Name} and cooked {food.Name}", ConsoleColor.Green);
             cooker?.CookingList.Remove(food);
         }

@@ -1,5 +1,7 @@
-﻿using System.Collections.Specialized;
+﻿using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using Kitchen.Models;
+using Kitchen.Services.OrderHistoryService;
 using Kitchen.Services.OrderService;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,17 +12,24 @@ namespace Kitchen.Controllers;
 public class OrderController : Controller
 {
     private readonly IOrderService _orderService;
+    private readonly IOrderHistoryService _orderHistoryService;
     
-    public OrderController(IOrderService orderService)
+    public OrderController(IOrderService orderService, IOrderHistoryService orderHistoryService)
     {
         _orderService = orderService;
+        _orderHistoryService = orderHistoryService;
     }
 
+    [HttpGet]
+    public ConcurrentBag<OrderHistory> GetOrderHistory()
+    {
+        return _orderHistoryService.GetAll();
+    }
+    
     [HttpPost]
     public async Task GetOrderFromKitchen([FromBody] Order? order)
     {
         if (order == null) return;
-    
         try
         {
             Console.WriteLine($"An order with {order.Id} came in the kitchen");
@@ -29,7 +38,7 @@ public class OrderController : Controller
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Failed to get order {order.Id}", e);
+            //ignore
         }
     }
     // [HttpPost]
