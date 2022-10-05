@@ -1,5 +1,4 @@
 ﻿using Kitchen.Kitchen;
-using Kitchen.Models;
 using Kitchen.Repositories.CookingApparatusRepository;
 using Kitchen.Repositories.CookRepository;
 using Kitchen.Repositories.FoodRepository;

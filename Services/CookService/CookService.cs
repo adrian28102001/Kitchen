@@ -159,7 +159,7 @@ public class CookService : ICookService
     private async Task CookFood(int orderId, int cookerId)
     {
         var cooker = await _cookRepository.GetById(cookerId);
-        var food = cooker?.CookingList.FirstOrDefault();
+        var food = cooker?.CookingList.First();
 
         if (food != null)
         {
