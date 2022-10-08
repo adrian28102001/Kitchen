@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Text;
 using Kitchen.Helpers;
 using Kitchen.Models;
@@ -52,19 +51,15 @@ public class OrderService : IOrderService
                 var order = orders.FirstOrDefault();
                 if (order != null)
                 {
-                    var isSimpleOrder = await IsSimpleOrder(order);
                     var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
                     var foodsByComplexity = await _foodService.SortFoodByComplexity(foodList);
                     ConsoleHelper.Print($"I started order with id {order.Id}, foodSize: {foodList.Count}");
-                    if (isSimpleOrder)
+                    if (await IsSimpleOrder(order))
                     {
-                        CallWaiters(order, foodsByComplexity, isSimpleOrder);
+                        CallWaiters(order, foodsByComplexity);
                     }
-                    else
-                    {
-                        await CallWaiters(order, foodsByComplexity, isSimpleOrder);
-                    }
-
+                    
+                    await CallWaiters(order, foodsByComplexity);
                     SendOrder(order);
                     ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
                         ConsoleColor.Magenta);
@@ -74,24 +69,25 @@ public class OrderService : IOrderService
             else
             {
                 ConsoleHelper.Print("There are no orders");
-                await SleepGenerator.Delay(3);
+                await SleepGenerator.Delay(1);
                 await PrepareOrder();
             }
         }
     }
 
-    private async Task CallWaiters(Order order, IEnumerable<Food> orders, bool isSimpleOrder)
+    private async Task CallWaiters(Order order, IEnumerable<Food> orders)
     {
+        var isSimpleOrder = await IsSimpleOrder(order);
         //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
         if (!isSimpleOrder)
         {
             ConsoleHelper.Print("I am a normal order");
-            await _cookService.AddFoodToCookerList(order.Id, orders, new List<Task>());
+            await _cookService.AddFoodToCookerList(order, orders, new List<Task>());
         }
         else
         {
             ConsoleHelper.Print("I am a special order");
-            await _cookService.CallSpecialCooker(order.Id, orders, new List<Task>());
+            await _cookService.CallSpecialCooker(order, orders, new List<Task>());
         }
     }
 
