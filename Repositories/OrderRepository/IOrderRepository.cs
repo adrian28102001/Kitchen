@@ -10,5 +10,5 @@ public interface IOrderRepository
     Task<Order?> GetById(int id);
     Task InsertOrder(Order order);
     Task<List<Order>> GetOldestOrders();
-    Task<IOrderedEnumerable<Order>> GetOrderToPrepare();
+    Task<List<Order>> GetOrderToPrepare();
 }

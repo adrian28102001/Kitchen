@@ -13,11 +13,13 @@ public class OrderController : Controller
 {
     private readonly IOrderService _orderService;
     private readonly IOrderHistoryService _orderHistoryService;
+    private readonly SemaphoreSlim _semaphore;
     
     public OrderController(IOrderService orderService, IOrderHistoryService orderHistoryService)
     {
         _orderService = orderService;
         _orderHistoryService = orderHistoryService;
+        _semaphore = new SemaphoreSlim(1);
     }
 
     [HttpGet]
@@ -34,7 +36,6 @@ public class OrderController : Controller
         {
             Console.WriteLine($"An order with {order.Id} came in the kitchen");
             await _orderService.InsertOrder(order);
-            _orderService.PrepareOrder(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add));
         }
         catch (Exception e)
         {

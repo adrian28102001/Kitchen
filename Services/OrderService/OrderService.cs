@@ -15,19 +15,26 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ICookService _cookService;
     private readonly IFoodService _foodService;
-
+    private readonly SemaphoreSlim _semaphore;
 
     public OrderService(IOrderRepository orderRepository, ICookService cookService, IFoodService foodService)
     {
         _orderRepository = orderRepository;
         _cookService = cookService;
         _foodService = foodService;
+        _semaphore = new SemaphoreSlim(1);
     }
 
-    public Task InsertOrder(Order order)
+    public async Task InsertOrder(Order order)
     {
-        _orderRepository.Orders.CollectionChanged += PrepareOrder;
-        return _orderRepository.InsertOrder(order);
+        // _orderRepository.Orders.CollectionChanged += PrepareOrder;
+        await _orderRepository.InsertOrder(order);
+    }
+
+    private Task RemoveOrder(Order order)
+    {
+        _orderRepository.Orders.Remove(order);
+        return Task.CompletedTask;
     }
 
     public Task<ObservableCollection<Order>> GetAll()
@@ -35,35 +42,56 @@ public class OrderService : IOrderService
         return _orderRepository.GetAll();
     }
 
-    public async void PrepareOrder(object? sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+    public async Task PrepareOrder()
     {
-        var ordersList = await _orderRepository.GetOrderToPrepare();
-        var orders = new List<Order>(ordersList);
-        foreach (var order in orders.ToList())
+        while (true)
         {
-            ConsoleHelper.Print("I started a new order");
-            var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
-
-            var sortedByComplexity = await _foodService.SortFoodByComplexity(foodList);
-            Console.WriteLine($"Order with id: {order.Id} has a list of {foodList.Count} foods");
-
-            //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
-            var isSimpleOrder = await IsSimpleOrder(order);
-
-            if (!isSimpleOrder)
+            var orders = await _orderRepository.GetOrderToPrepare();
+            if (orders.Any())
             {
-                ConsoleHelper.Print("I am a normal order");
-                await _cookService.AddFoodToCookerList(order.Id, sortedByComplexity.ToList(), new List<Task>());
+                var order = orders.FirstOrDefault();
+                if (order != null)
+                {
+                    var isSimpleOrder = await IsSimpleOrder(order);
+                    var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
+                    var foodsByComplexity = await _foodService.SortFoodByComplexity(foodList);
+                    ConsoleHelper.Print($"I started order with id {order.Id}, foodSize: {foodList.Count}");
+                    if (isSimpleOrder)
+                    {
+                        CallWaiters(order, foodsByComplexity, isSimpleOrder);
+                    }
+                    else
+                    {
+                        await CallWaiters(order, foodsByComplexity, isSimpleOrder);
+                    }
+
+                    SendOrder(order);
+                    ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
+                        ConsoleColor.Magenta);
+                    await RemoveOrder(order);
+                }
             }
             else
             {
-                ConsoleHelper.Print("I am a special order");
-                await _cookService.CallSpecialCooker(order.Id, sortedByComplexity.ToList(), new List<Task>());
+                ConsoleHelper.Print("There are no orders");
+                await SleepGenerator.Delay(3);
+                await PrepareOrder();
             }
+        }
+    }
 
-            await SendOrder(order);
-            ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen", ConsoleColor.Magenta);
-            orders.Remove(order);
+    private async Task CallWaiters(Order order, IEnumerable<Food> orders, bool isSimpleOrder)
+    {
+        //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
+        if (!isSimpleOrder)
+        {
+            ConsoleHelper.Print("I am a normal order");
+            await _cookService.AddFoodToCookerList(order.Id, orders, new List<Task>());
+        }
+        else
+        {
+            ConsoleHelper.Print("I am a special order");
+            await _cookService.CallSpecialCooker(order.Id, orders, new List<Task>());
         }
     }
 

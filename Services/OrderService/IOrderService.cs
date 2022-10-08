@@ -9,5 +9,5 @@ public interface IOrderService
     Task InsertOrder(Order order);
     Task<ObservableCollection<Order>> GetAll();
     Task SendOrder(Order order);
-    void PrepareOrder(object? sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs);
+    Task PrepareOrder();
 }

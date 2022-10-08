@@ -32,9 +32,9 @@ public class FoodService : IFoodService
         return _foodRepository.GetFoodFromOrder(foodIds);
     }
 
-    public Task<IOrderedEnumerable<Food>> SortFoodByComplexity(IEnumerable<Food> foods)
+    public Task<List<Food>> SortFoodByComplexity(IEnumerable<Food> foods)
     {
-        return Task.FromResult(foods.OrderByDescending(food => food.Complexity));
+        return Task.FromResult(foods.OrderByDescending(food => food.Complexity).ToList());
     }
 
     public Task<Food?> GetFoodThatPreparesQuickest(IEnumerable<Food> foods)

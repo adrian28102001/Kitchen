@@ -1,4 +1,5 @@
-﻿using Kitchen.Services.CookingApparatusServices;
+﻿using Kitchen.Helpers;
+using Kitchen.Services.CookingApparatusServices;
 using Kitchen.Services.CookService;
 using Kitchen.Services.FoodService;
 using Kitchen.Services.OrderService;
@@ -31,9 +32,12 @@ public class Kitchen : IKitchen
         };
 
         await Task.WhenAll(taskList);
+        ConsoleHelper.Print("Everything is ready", ConsoleColor.Green);
     }
 
-    public async Task MaintainKitchen()
+    public Task MaintainKitchen()
     {
+        _orderService.PrepareOrder();
+        return Task.CompletedTask;
     }
 }
