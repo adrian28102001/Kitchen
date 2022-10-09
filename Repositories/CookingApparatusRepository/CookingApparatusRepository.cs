@@ -17,29 +17,19 @@ public class CookingApparatusRepository : ICookingApparatusRepository
 
     public Task GenerateCookingApparatus()
     {
-        _cookingApparatus.Add(new CookingApparatus()
-        {
-            Id = 1,
-            Name = "Stove",
-            IsBusy = false
-        });
-        _cookingApparatus.Add(new CookingApparatus()
-        {
-            Id = 2,
-            Name = "Oven",
-            IsBusy = false
-        });
-        _cookingApparatus.Add(new CookingApparatus()
-        {
-            Id = 3,
-            Name = "Oven",
-            IsBusy = false
-        });
+        _cookingApparatus.Add(new CookingApparatus(1, "Stove", false));
+        _cookingApparatus.Add(new CookingApparatus(2, "Oven", false));
+        
         return Task.CompletedTask;
     }
 
     public Task<ConcurrentBag<CookingApparatus>> GetAll()
     {
         return _genericRepository.GetAll();
+    }
+
+    public Task<CookingApparatus> GetByName(string name)
+    {
+        return Task.FromResult(_cookingApparatus.FirstOrDefault(apparatus => apparatus.Name.Equals(name)))!;
     }
 }

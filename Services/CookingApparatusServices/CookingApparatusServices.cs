@@ -22,4 +22,9 @@ public class CookingApparatusServices : ICookingApparatusServices
     {
         return _cookingApparatus.GetAll();
     }
+
+    public Task<CookingApparatus> GetByName(string name)
+    {
+        return _cookingApparatus.GetByName(name);
+    }
 }

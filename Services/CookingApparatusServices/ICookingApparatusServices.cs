@@ -7,4 +7,5 @@ public interface ICookingApparatusServices
 {
     Task GenerateCookingApparatus();
     Task<ConcurrentBag<CookingApparatus>> GetAll();
+    Task<CookingApparatus> GetByName(string name);
 }

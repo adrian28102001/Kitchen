@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
 using Kitchen.Models;
 using Kitchen.Repositories.GenericRepository;
 
@@ -31,7 +30,7 @@ public class CookRepository : ICookRepository
             Proficiency = 4,
             CatchPhrase = "Cook1",
             IsBusy = false,
-            CookingList = new ObservableCollection<Food>()
+            CookingList = new List<Food>()
         });
         _cooks.Add(new Cook
         {
@@ -41,7 +40,7 @@ public class CookRepository : ICookRepository
             Proficiency = 3,
             CatchPhrase = "Cook2",
             IsBusy = false,
-            CookingList = new ObservableCollection<Food>()
+            CookingList = new List<Food>()
         });
         _cooks.Add(new Cook
         {
@@ -51,7 +50,7 @@ public class CookRepository : ICookRepository
             Proficiency = 2,
             CatchPhrase = "Cook3",
             IsBusy = false,
-            CookingList = new ObservableCollection<Food>()
+            CookingList = new List<Food>()
         });
         _cooks.Add(new Cook
         {
@@ -61,12 +60,12 @@ public class CookRepository : ICookRepository
             Proficiency = 2,
             CatchPhrase = "Cook4",
             IsBusy = false,
-            CookingList = new ObservableCollection<Food>()
+            CookingList = new List<Food>()
         });
         return Task.CompletedTask;
     }
 
-    public Task<Cook?> GetById(int id)
+    public Task<Cook> GetById(int id)
     {
         return _genericRepository.GetById(id);
     }
@@ -81,9 +80,9 @@ public class CookRepository : ICookRepository
         return Task.FromResult(_cooks.LastOrDefault(cook => cook.Rank.Equals(rank)))!;
     }
 
-    public Task<Cook> GetSpecialCooker(int rank, int proficiency)
+    public Task<Cook?> GetSpecialCooker(int rank, int proficiency)
     {
         return Task.FromResult(_cooks
-            .First(cook => cook.Rank.Equals(rank) && (cook.Proficiency.Equals(proficiency))));
+            .First(cook => cook.Rank.Equals(rank) && cook.Proficiency.Equals(proficiency)))!;
     }
 }

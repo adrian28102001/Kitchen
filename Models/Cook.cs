@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace Kitchen.Models;
+﻿namespace Kitchen.Models;
 
 public class Cook : BaseEntity
 {
@@ -9,5 +7,5 @@ public class Cook : BaseEntity
     public int Proficiency { get; set; }   
     public string CatchPhrase { get; set; }
     public bool IsBusy { get; set; }
-    public ObservableCollection<Food> CookingList { get; set; }
+    public List<Food> CookingList { get; set; }
 }   

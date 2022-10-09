@@ -1,11 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using System.Text;
 using Kitchen.Helpers;
 using Kitchen.Models;
 using Kitchen.Repositories.CookRepository;
 using Kitchen.Services.FoodService;
-using Kitchen.Services.OrderHistoryService;
-using Newtonsoft.Json;
 
 namespace Kitchen.Services.CookService;
 
@@ -13,14 +10,11 @@ public class CookService : ICookService
 {
     private readonly ICookRepository _cookRepository;
     private readonly IFoodService _foodService;
-    private readonly IOrderHistoryService _orderHistoryService;
 
-    public CookService(ICookRepository cookRepository, IFoodService foodService,
-        IOrderHistoryService orderHistoryService)
+    public CookService(ICookRepository cookRepository, IFoodService foodService)
     {
         _cookRepository = cookRepository;
         _foodService = foodService;
-        _orderHistoryService = orderHistoryService;
     }
 
     public Task GenerateCooks()
@@ -33,7 +27,7 @@ public class CookService : ICookService
         return _cookRepository.GetAll();
     }
 
-    public Task<Cook?> GetById(int id)
+    public Task<Cook> GetById(int id)
     {
         return _cookRepository.GetById(id);
     }
@@ -105,7 +99,6 @@ public class CookService : ICookService
 
         if (foods.Any())
         {
-            ConsoleHelper.Print("I am the special method", ConsoleColor.Red);
             await SleepFunctionCall(foods);
         }
 
@@ -163,22 +156,50 @@ public class CookService : ICookService
     private async Task CookFood(Order order, int cookerId)
     {
         var cooker = await _cookRepository.GetById(cookerId);
-        var food = cooker?.CookingList.First();
-
-        if (food != null)
+        
+        while (cooker.CookingList.Any())
         {
-            await SleepGenerator.Delay(food.PreparationTime);
-            order.UpdatedOnUtc = DateTime.Now;
-            _orderHistoryService.Insert(new OrderHistory
+            var food = cooker.CookingList.FirstOrDefault();
+            if (food == null) continue;
+            if (food.CookingApparatus != null)
             {
-                Id = IdGenerator.GenerateId(),
-                CookerId = cookerId,
-                FoodId = food.Id,
-                OrderId = order.Id
-            });
-
-            ConsoleHelper.Print($"I am {cooker?.Name} and cooked {food.Name}", ConsoleColor.Green);
-            cooker?.CookingList.Remove(food);
+                if (food.CookingApparatus.IsBusy)
+                {
+                    // ConsoleHelper.Print($"I tried to cook {food.Name} in {food.CookingApparatus.Name} but it's busy");
+                    await SleepGenerator.Delay(1);
+                }
+                else
+                {
+                    await CookFoodInCookingApparatus(food, order, cooker, food.CookingApparatus);
+                }
+            }
+            else
+            {
+                await SleepGenerator.Delay(food.PreparationTime);
+                order.UpdatedOnUtc = DateTime.Now;
+                cooker.CookingList.Remove(food);
+                ConsoleHelper.Print($"I am {cooker.Name} and cooked {food.Name}", ConsoleColor.Green);
+            }
         }
     }
+
+    private static async Task CookFoodInCookingApparatus(Food food, Order order, Cook cooker,
+        CookingApparatus cookingApparatus)
+    {
+        cookingApparatus.IsBusy = true;
+        await SleepGenerator.Delay(food.PreparationTime);
+        cookingApparatus.IsBusy = false;
+        order.UpdatedOnUtc = DateTime.Now;
+        cooker.CookingList.Remove(food);
+        ConsoleHelper.Print($"I am {cooker.Name} and cooked {food.Name}", ConsoleColor.Green);
+    }
 }
+
+
+// _orderHistoryService.Insert(new OrderHistory
+// {
+//     Id = IdGenerator.GenerateId(),
+//     CookerId = cookerId,
+//     FoodId = food.Id,
+//     OrderId = order.Id
+// });

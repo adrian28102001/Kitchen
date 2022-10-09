@@ -7,7 +7,7 @@ public interface ICookService
 {
     Task GenerateCooks();
     Task<ConcurrentBag<Cook>> GetAll();
-    Task<Cook?> GetById(int id);
+    Task<Cook> GetById(int id);
     Task<Cook?> GetFreeCook();
     Task<Cook> GetCookerByRank(int rank);
     Task AddFoodToCookerList(Order order, IEnumerable<Food> foodList, List<Task> tasks);

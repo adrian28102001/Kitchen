@@ -1,116 +1,42 @@
 ﻿using Kitchen.Models;
+using Kitchen.Services.CookingApparatusServices;
 
 namespace Kitchen.Repositories.FoodRepository;
 
 public class FoodRepository : IFoodRepository
 {
     private readonly IList<Food> _foods;
+    private readonly ICookingApparatusServices _cookingApparatusServices;
 
-    public FoodRepository()
+    public FoodRepository(ICookingApparatusServices cookingApparatusServices)
     {
+        _cookingApparatusServices = cookingApparatusServices;
         _foods = new List<Food>();
     }
 
-    public Task GenerateMenu()
+    public async Task GenerateMenu()
     {
-        _foods.Add(new Food
-        {
-            Id = 1,
-            Name = "Pizza",
-            PreparationTime = 20,
-            Complexity = 2
-        });
-        _foods.Add(new Food
-        {
-            Id = 2,
-            Name = "Salad",
-            PreparationTime = 10,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 3,
-            Name = " Zeama",
-            PreparationTime = 7,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 4,
-            Name = "Scallop Sashimi with Meyer Lemon Confit",
-            PreparationTime = 32,
-            Complexity = 3
-        });
-        _foods.Add(new Food
-        {
-            Id = 5,
-            Name = "Island Duck with Mulberry Mustard",
-            PreparationTime = 35,
-            Complexity = 3
-        });
-        _foods.Add(new Food
-        {
-            Id = 6,
-            Name = "Waffles",
-            PreparationTime = 10,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 7,
-            Name = "Aubergine",
-            PreparationTime = 20,
-            Complexity = 2
-        });
+        var oven = await _cookingApparatusServices.GetByName("Oven");
+        var stove = await _cookingApparatusServices.GetByName("Stove");
 
-        _foods.Add(new Food
-        {
-            Id = 8,
-            Name = "Lasagna",
-            PreparationTime = 30,
-            Complexity = 2
-        });
-        _foods.Add(new Food
-        {
-            Id = 9,
-            Name = "Burger",
-            PreparationTime = 15,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 10,
-            Name = "Gyros",
-            PreparationTime = 15,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 11,
-            Name = "Kebab",
-            PreparationTime = 15,
-            Complexity = 1
-        });
-        _foods.Add(new Food
-        {
-            Id = 12,
-            Name = "UnagiMaki",
-            PreparationTime = 20,
-            Complexity = 2
-        });
-        _foods.Add(new Food
-        {
-            Id = 13,
-            Name = "TobaccoChicken",
-            PreparationTime = 30,
-            Complexity = 2
-        });
-        return Task.CompletedTask;
+        _foods.Add(new Food(1, "Pizza", 20, 2, oven));
+        _foods.Add(new Food(2, "Salad", 10, 1, null));
+        _foods.Add(new Food(3, "Zeama", 7, 1, stove));
+        _foods.Add(new Food(4, "Scallop Sashimi with Meyer Lemon Confit", 32, 3, null));
+        _foods.Add(new Food(5, "Island Duck with Mulberry Mustard", 35, 3, oven));
+        _foods.Add(new Food(6, "Waffles", 10, 1, stove));
+        _foods.Add(new Food(7, "Aubergine", 20, 2, oven));
+        _foods.Add(new Food(8, "Lasagna", 30, 2, oven));
+        _foods.Add(new Food(9, "Burger", 15, 1, stove));
+        _foods.Add(new Food(10, "Gyros", 15, 1, null));
+        _foods.Add(new Food(11, "Kebab", 15, 1, null));
+        _foods.Add(new Food(12, "UnagiMaki", 20, 2, null));
+        _foods.Add(new Food(13, "TobaccoChicken", 30, 2, oven));
     }
 
     public Task<IList<Food>> GetAll()
     {
-       return Task.FromResult(_foods);
+        return Task.FromResult(_foods);
     }
 
     public Task<Food?> GetById(int id)
