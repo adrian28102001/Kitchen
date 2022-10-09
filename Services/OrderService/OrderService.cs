@@ -21,7 +21,7 @@ public class OrderService : IOrderService
         _orderRepository = orderRepository;
         _cookService = cookService;
         _foodService = foodService;
-        _semaphore = new SemaphoreSlim(1);
+        _semaphore = new SemaphoreSlim(2);
     }
 
     public async Task InsertOrder(Order order)
@@ -56,19 +56,19 @@ public class OrderService : IOrderService
                     ConsoleHelper.Print($"I started order with id {order.Id}, foodSize: {foodList.Count}");
                     if (await IsSimpleOrder(order))
                     {
-                        CallWaiters(order, foodsByComplexity);
+                        Task.Run(() =>  CallWaiters(order, foodsByComplexity));
                     }
-                    
-                    await CallWaiters(order, foodsByComplexity);
-                    SendOrder(order);
-                    ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
-                        ConsoleColor.Magenta);
+                    else
+                    {
+                        Task.Run(async () => await CallWaiters(order, foodsByComplexity));
+                    }
                     await RemoveOrder(order);
+                  
                 }
             }
             else
             {
-                ConsoleHelper.Print("There are no orders");
+                // ConsoleHelper.Print("There are no orders");
                 await SleepGenerator.Delay(1);
                 await PrepareOrder();
             }
@@ -89,6 +89,9 @@ public class OrderService : IOrderService
             ConsoleHelper.Print("I am a special order");
             await _cookService.CallSpecialCooker(order, orders, new List<Task>());
         }
+        await SendOrder(order);
+        ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
+            ConsoleColor.Magenta);
     }
 
     private async Task<bool> IsSimpleOrder(Order order)
@@ -110,24 +113,27 @@ public class OrderService : IOrderService
 
         return result;
     }
-
-    public async Task SendOrder(Order order)
+    
+    private static async Task SendOrder(Order order)
     {
-        try
+        await Task.Run(async () =>
         {
-            Console.WriteLine($"I have sent the order with id: {order.Id} to kitchen");
-            var json = JsonConvert.SerializeObject(order);
-            var data = new StringContent(json, Encoding.UTF8, "application/json");
+            try
+            {
+                Console.WriteLine($"I have sent the order with id: {order.Id} to kitchen");
+                var json = JsonConvert.SerializeObject(order);
+                var data = new StringContent(json, Encoding.UTF8, "application/json");
 
-            const string url = Settings.DiningHallUrl;
-            using var client = new HttpClient();
+                const string url = Settings.DiningHallUrl;
+                using var client = new HttpClient();
 
-            var response = await client.PostAsync(url, data);
-            var result = await response.Content.ReadAsStringAsync();
-        }
-        catch (Exception e)
-        {
-            //ignore
-        }
+                var response = await client.PostAsync(url, data);
+                var result = await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception e)
+            {
+                //ignore
+            }
+        });
     }
 }

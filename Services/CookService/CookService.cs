@@ -1,9 +1,11 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
 using Kitchen.Helpers;
 using Kitchen.Models;
 using Kitchen.Repositories.CookRepository;
 using Kitchen.Services.FoodService;
 using Kitchen.Services.OrderHistoryService;
+using Newtonsoft.Json;
 
 namespace Kitchen.Services.CookService;
 
@@ -79,7 +81,6 @@ public class CookService : ICookService
         }
 
         await Task.WhenAll(tasks);
-        Console.WriteLine("All the food from this order was cooked");
     }
 
     //This cooker is done special for simple orders who can be fast done

@@ -13,7 +13,7 @@ public class OrderController : Controller
     private readonly IOrderService _orderService;
     private readonly IOrderHistoryService _orderHistoryService;
     private readonly SemaphoreSlim _semaphore;
-    
+
     public OrderController(IOrderService orderService, IOrderHistoryService orderHistoryService)
     {
         _orderService = orderService;
@@ -26,7 +26,7 @@ public class OrderController : Controller
     {
         return _orderHistoryService.GetAll();
     }
-    
+
     [HttpPost]
     public async Task GetOrderFromKitchen([FromBody] Order? order)
     {
@@ -41,22 +41,4 @@ public class OrderController : Controller
             //ignore
         }
     }
-    // [HttpPost]
-    // public async Task<ContentResult> PostOrder([FromBody] Order? order)
-    // {
-    //     if (order == null) return Content("Order is null");
-    //     
-    //     try
-    //     {
-    //         await _orderService.SendOrder(order);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine($"Failed to send order {order.Id}");
-    //     }
-    //     
-    //     // var response =  await client.PostAsync(url, data);
-    //     // _logger.LogInformation("Order "+ order.Id+" sent to kitchen");
-    //     return Content("Hi");
-    // }
 }

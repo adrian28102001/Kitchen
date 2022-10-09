@@ -35,9 +35,8 @@ public class Kitchen : IKitchen
         ConsoleHelper.Print("Everything is ready", ConsoleColor.Green);
     }
 
-    public Task MaintainKitchen()
+    public async Task MaintainKitchen()
     {
-        _orderService.PrepareOrder();
-        return Task.CompletedTask;
+        await _orderService.PrepareOrder();
     }
 }
