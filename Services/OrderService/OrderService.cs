@@ -14,14 +14,18 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ICookService _cookService;
     private readonly IFoodService _foodService;
-    private readonly SemaphoreSlim _semaphore;
+    private readonly Semaphore _normalOrderSemaphore;
+    private readonly Semaphore _specialOrderSemaphore;
+    private readonly Semaphore _sendOrderSemaphore;
 
     public OrderService(IOrderRepository orderRepository, ICookService cookService, IFoodService foodService)
     {
         _orderRepository = orderRepository;
         _cookService = cookService;
         _foodService = foodService;
-        _semaphore = new SemaphoreSlim(2);
+        _normalOrderSemaphore = new Semaphore(2, 2);
+        _specialOrderSemaphore = new Semaphore(3, 3);
+        _sendOrderSemaphore = new Semaphore(1, 1);
     }
 
     public async Task InsertOrder(Order order)
@@ -45,7 +49,7 @@ public class OrderService : IOrderService
     {
         while (true)
         {
-            var orders = await _orderRepository.GetOrderToPrepare();
+            var orders = await _orderRepository.GetOrdersToPrepare();
             if (orders.Any())
             {
                 var order = orders.FirstOrDefault();
@@ -53,17 +57,18 @@ public class OrderService : IOrderService
                 {
                     var foodList = await _foodService.GetFoodFromOrder(order.FoodList);
                     var foodsByComplexity = await _foodService.SortFoodByComplexity(foodList);
-                    ConsoleHelper.Print($"I started order with id {order.Id}, foodSize: {foodList.Count}");
+
                     if (await IsSimpleOrder(order))
                     {
-                        Task.Run(() =>  CallWaiters(order, foodsByComplexity));
+                        Task.Run(() => CallWaiters(order, foodsByComplexity, foodList.Count));
                     }
                     else
                     {
-                        Task.Run(async () => await CallWaiters(order, foodsByComplexity));
+                        Task.Run(async () => await CallWaiters(order, foodsByComplexity, foodList.Count));
                     }
+
+                    Task.WaitAny();
                     await RemoveOrder(order);
-                  
                 }
             }
             else
@@ -75,23 +80,38 @@ public class OrderService : IOrderService
         }
     }
 
-    private async Task CallWaiters(Order order, IEnumerable<Food> orders)
+    private async Task CallWaiters(Order order, IEnumerable<Food> foods, int foodListSize)
     {
-        var isSimpleOrder = await IsSimpleOrder(order);
-        //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
-        if (!isSimpleOrder)
+        await Task.Run(async () =>
         {
-            ConsoleHelper.Print("I am a normal order");
-            await _cookService.AddFoodToCookerList(order, orders, new List<Task>());
-        }
-        else
-        {
-            ConsoleHelper.Print("I am a special order");
-            await _cookService.CallSpecialCooker(order, orders, new List<Task>());
-        }
-        await SendOrder(order);
-        ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
-            ConsoleColor.Magenta);
+            var isSimpleOrder = await IsSimpleOrder(order);
+            //A simple order is one that does not imply big rank food, and can be done by cook nr 3 with rank 2 and proficiency 2
+            if (isSimpleOrder)
+            {
+                _specialOrderSemaphore.WaitOne();
+                ConsoleHelper.Print($"I started special order with id {order.Id}, food list size: {foodListSize}");
+                await _cookService.CallSpecialCooker(order, foods, new Dictionary<int, List<Task>>());
+                order.UpdatedOnUtc = DateTime.Now;
+                Console.WriteLine("I am released");
+                _specialOrderSemaphore.Release();
+               
+            }
+            else
+            {
+                _normalOrderSemaphore.WaitOne();
+                ConsoleHelper.Print($"I started normal order with id {order.Id}, food list size: {foodListSize}");
+                await _cookService.AddFoodToCookerList(order, foods, new Dictionary<int, List<Task>>());
+                order.UpdatedOnUtc = DateTime.Now;
+                Console.WriteLine("I am released");
+                _normalOrderSemaphore.Release();
+            }
+
+            _sendOrderSemaphore.WaitOne();
+            await SendOrder(order);
+            _sendOrderSemaphore.Release();
+            ConsoleHelper.Print($"Order with id {order.Id} was packed and sent in the kitchen",
+                ConsoleColor.Magenta);
+        });
     }
 
     private async Task<bool> IsSimpleOrder(Order order)
@@ -113,7 +133,7 @@ public class OrderService : IOrderService
 
         return result;
     }
-    
+
     private static async Task SendOrder(Order order)
     {
         await Task.Run(async () =>

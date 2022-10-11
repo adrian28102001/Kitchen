@@ -26,7 +26,7 @@ public class OrderRepository : IOrderRepository
         return Task.FromResult(Orders.OrderBy(o => o.CreatedOnUtc).ToList());
     }
 
-    public Task<List<Order>> GetOrderToPrepare()
+    public Task<List<Order>> GetOrdersToPrepare()
     {
         return Task.FromResult(Orders.OrderBy(o => o.CreatedOnUtc).ThenBy(o => o.Priority).ToList());
     }

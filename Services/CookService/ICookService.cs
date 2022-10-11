@@ -10,6 +10,6 @@ public interface ICookService
     Task<Cook> GetById(int id);
     Task<Cook?> GetFreeCook();
     Task<Cook> GetCookerByRank(int rank);
-    Task AddFoodToCookerList(Order order, IEnumerable<Food> foodList, List<Task> tasks);
-    Task CallSpecialCooker(Order order, IEnumerable<Food> toList, List<Task> tasks);
+    Task AddFoodToCookerList(Order order, IEnumerable<Food> foodList, Dictionary<int, List<Task>> tasks);
+    Task CallSpecialCooker(Order order, IEnumerable<Food> foodList, Dictionary<int, List<Task>> tasks);
 }

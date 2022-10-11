@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using Kitchen.Helpers;
 using Kitchen.Models;
 using Kitchen.Services.OrderHistoryService;
 using Kitchen.Services.OrderService;
@@ -33,7 +34,7 @@ public class OrderController : Controller
         if (order == null) return;
         try
         {
-            Console.WriteLine($"An order with {order.Id} came in the kitchen");
+            ConsoleHelper.Print($"An order with {order.Id} came in the kitchen", ConsoleColor.DarkYellow);
             await _orderService.InsertOrder(order);
         }
         catch (Exception e)
